@@ -32,6 +32,24 @@ const resourceIcon = new L.Icon({
   shadowSize: [41, 41]
 });
 
+// Generate mock coordinates from address string
+// In a real implementation, you would use geocoding or store coords in database
+const generateMockCoordinates = (address: string): [number, number] => {
+  // Simple hash function to generate consistent but random-looking coordinates
+  let hash = 0;
+  for (let i = 0; i < address.length; i++) {
+    hash = address.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  
+  // Generate longitude between -76 and -72 (rough US northeast area)
+  const lng = -76 + (hash & 0xFFFF) / 0xFFFF * 4;
+  
+  // Generate latitude between 38 and 42 (rough US northeast area)
+  const lat = 38 + (hash & 0xFFFF) / 0xFFFF * 4;
+  
+  return [lng, lat];
+};
+
 // Component to adjust the map view
 const MapBoundsHandler = ({ resources, filtered }: { resources: Resource[], filtered: boolean }) => {
   const map = useMap();
@@ -105,24 +123,6 @@ const ResourceMap = () => {
     setFiltersChanged(true);
   }, [resources, searchTerm, selectedTypes, selectedServices]);
   
-  // Generate mock coordinates from address string
-  // In a real implementation, you would use geocoding or store coords in database
-  const generateMockCoordinates = (address: string): [number, number] => {
-    // Simple hash function to generate consistent but random-looking coordinates
-    let hash = 0;
-    for (let i = 0; i < address.length; i++) {
-      hash = address.charCodeAt(i) + ((hash << 5) - hash);
-    }
-    
-    // Generate longitude between -76 and -72 (rough US northeast area)
-    const lng = -76 + (hash & 0xFFFF) / 0xFFFF * 4;
-    
-    // Generate latitude between 38 and 42 (rough US northeast area)
-    const lat = 38 + (hash & 0xFFFF) / 0xFFFF * 4;
-    
-    return [lng, lat];
-  };
-  
   // Handle type selection
   const handleTypeChange = (type: string) => {
     setSelectedTypes(prev => 
@@ -145,7 +145,7 @@ const ResourceMap = () => {
     <div className="relative w-full h-[calc(100vh-4rem)]">
       {/* Map container */}
       <MapContainer 
-        center={[40, -74.5]} 
+        defaultCenter={[40, -74.5]} 
         zoom={9} 
         className="h-full w-full" 
         zoomControl={false}
