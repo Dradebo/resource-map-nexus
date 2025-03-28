@@ -1,118 +1,62 @@
+import { createClient } from '@supabase/supabase-js'
+import { Database } from '@/types/supabase'
 
-import { createClient } from '@supabase/supabase-js';
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
-// These environment variables will need to be set in your Supabase project
-// For development, you'll use the local instance values
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+if (!supabaseUrl || !supabaseAnonKey) {
+  throw new Error('Missing Supabase environment variables')
+}
 
-// Initialize the Supabase client
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey)
 
-// Database types
-export type Resource = {
-  id: string;
-  name: string;
-  type: 'Center' | 'Expert';
-  services: string[];
-  address: string;
-  lat: number;
-  lng: number;
-  phone?: string;
-  email?: string;
-  website?: string;
-  description?: string;
-  image_url?: string;
-};
+export interface Resource {
+  id: string
+  name: string
+  type: string
+  services: string[]
+  address: string
+  created_at: string
+}
 
-export type Service = {
-  id: string;
-  name: string;
-  description: string;
-  category: string;
-};
+export interface Service {
+  id: string
+  name: string
+  description: string
+  resource_id: string
+  created_at: string
+}
 
-// Resource API functions
-export const getResources = async () => {
+export const getResources = async (): Promise<Resource[]> => {
   const { data, error } = await supabase
     .from('resources')
-    .select('*');
-  
-  if (error) {
-    console.error('Error fetching resources:', error);
-    return [];
-  }
-  
-  return data as Resource[];
-};
+    .select(`
+      *,
+      services (
+        name
+      )
+    `)
+    .order('created_at', { ascending: false })
 
-export const getResourceById = async (id: string) => {
-  const { data, error } = await supabase
-    .from('resources')
-    .select('*')
-    .eq('id', id)
-    .single();
-  
   if (error) {
-    console.error(`Error fetching resource with id ${id}:`, error);
-    return null;
+    throw error
   }
-  
-  return data as Resource;
-};
 
-export const getResourcesByType = async (type: 'Center' | 'Expert') => {
-  const { data, error } = await supabase
-    .from('resources')
-    .select('*')
-    .eq('type', type);
-  
-  if (error) {
-    console.error(`Error fetching resources of type ${type}:`, error);
-    return [];
-  }
-  
-  return data as Resource[];
-};
+  return data.map(resource => ({
+    ...resource,
+    services: resource.services.map(service => service.name)
+  }))
+}
 
-export const getResourcesByService = async (serviceId: string) => {
-  const { data, error } = await supabase
-    .from('resources')
-    .select('*')
-    .contains('services', [serviceId]);
-  
-  if (error) {
-    console.error(`Error fetching resources with service ${serviceId}:`, error);
-    return [];
-  }
-  
-  return data as Resource[];
-};
-
-// Services API functions
-export const getServices = async () => {
-  const { data, error } = await supabase
-    .from('services')
-    .select('*');
-  
-  if (error) {
-    console.error('Error fetching services:', error);
-    return [];
-  }
-  
-  return data as Service[];
-};
-
-export const getServicesByCategory = async (category: string) => {
+export const getServices = async (): Promise<Service[]> => {
   const { data, error } = await supabase
     .from('services')
     .select('*')
-    .eq('category', category);
-  
+    .order('created_at', { ascending: false })
+
   if (error) {
-    console.error(`Error fetching services in category ${category}:`, error);
-    return [];
+    throw error
   }
-  
-  return data as Service[];
-};
+
+  return data
+}
