@@ -11,12 +11,15 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
+// Use the same base path as in vite.config.ts
+const basePath = import.meta.env.BASE_URL || '/resource-map-nexus/';
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <Toaster />
       <Sonner />
-      <BrowserRouter>
+      <BrowserRouter basename={basePath}>
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/partners" element={<Partners />} />
