@@ -1,8 +1,6 @@
-
 import React, { useState, useEffect } from 'react';
-import { Resource } from '@/lib/supabase';
-import { useQuery } from '@tanstack/react-query';
-import { getResources } from '@/lib/supabase';
+import { Resource } from '@/types';
+import { useResources } from '@/hooks/useResources';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Filter, MapPin } from 'lucide-react';
@@ -16,19 +14,19 @@ import L from 'leaflet';
 // Fix Leaflet default icon issue
 delete (L.Icon.Default.prototype as any)._getIconUrl;
 L.Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x.png',
-  iconUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png',
-  shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
+  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
+  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
 });
 
 // Custom marker icon
 const resourceIcon = new L.Icon({
-  iconUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png',
-  iconRetinaUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x.png',
+  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
+  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
   iconSize: [25, 41],
   iconAnchor: [12, 41],
   popupAnchor: [1, -34],
-  shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
   shadowSize: [41, 41]
 });
 
@@ -73,21 +71,22 @@ const MapBoundsHandler = ({ resources, filtered }: { resources: Resource[], filt
   return null;
 };
 
-const ResourceMap = () => {
+const ResourceMap: React.FC = () => {
+  const { resources, loading, error } = useResources();
+  const [filteredResources, setFilteredResources] = useState<Resource[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
   const [availableTypes, setAvailableTypes] = useState<string[]>([]);
   const [availableServices, setAvailableServices] = useState<string[]>([]);
-  const [filteredResources, setFilteredResources] = useState<Resource[]>([]);
   const [filtersChanged, setFiltersChanged] = useState(false);
 
-  // Fetch resources
-  const { data: resources, isLoading } = useQuery({
-    queryKey: ['resources'],
-    queryFn: getResources,
-  });
-  
+  useEffect(() => {
+    if (resources) {
+      setFilteredResources(resources);
+    }
+  }, [resources]);
+
   // Initialize types and services lists from resources
   useEffect(() => {
     if (resources) {
@@ -140,14 +139,30 @@ const ResourceMap = () => {
         : [...prev, service]
     );
   };
-  
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-[600px] bg-card">
+        <div className="text-muted-foreground">Loading map...</div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-[600px] bg-card">
+        <div className="text-destructive">Error loading map: {error.message}</div>
+      </div>
+    );
+  }
+
   return (
     <div className="relative w-full h-[calc(100vh-4rem)]">
       {/* Map container */}
       <MapContainer 
         defaultCenter={[40, -74.5]} 
         zoom={9} 
-        className="h-full w-full" 
+        className="h-full w-full bg-card" 
         zoomControl={false}
       >
         <TileLayer
@@ -163,19 +178,20 @@ const ResourceMap = () => {
               position={[coords[1], coords[0]]} 
               icon={resourceIcon}
             >
-              <Popup>
-                <div className="p-1">
-                  <h3 className="text-lg font-bold">{resource.name}</h3>
-                  <p className="text-sm text-gray-600">{resource.type}</p>
-                  <div className="mt-2">
-                    <p className="text-sm font-medium">Services:</p>
-                    <div className="flex flex-wrap gap-1 mt-1">
-                      {resource.services.map(service => (
-                        <span key={service} className="text-xs bg-gray-100 px-2 py-0.5 rounded">{service}</span>
-                      ))}
-                    </div>
-                  </div>
-                  <p className="mt-2 text-sm">{resource.address}</p>
+              <Popup className="map-popup">
+                <div className="p-2">
+                  <h3 className="font-bold text-foreground">{resource.name}</h3>
+                  <p className="text-muted-foreground">{resource.description}</p>
+                  {resource.website && (
+                    <a
+                      href={resource.website}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-primary hover:text-primary/80"
+                    >
+                      Visit Website
+                    </a>
+                  )}
                 </div>
               </Popup>
             </Marker>
@@ -266,13 +282,6 @@ const ResourceMap = () => {
           </div>
         </SheetContent>
       </Sheet>
-      
-      {/* Loading indicator */}
-      {isLoading && (
-        <div className="absolute inset-0 flex items-center justify-center bg-white/80 z-10">
-          <div className="text-lg">Loading resources...</div>
-        </div>
-      )}
     </div>
   );
 };

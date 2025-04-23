@@ -1,4 +1,3 @@
-
 import type { Config } from "tailwindcss";
 
 export default {
@@ -65,11 +64,11 @@ export default {
 				},
 				// Custom color scheme for our resource hub
 				brand: {
-					blue: '#0EA5E9',
-					teal: '#0D9488',
-					green: '#22C55E',
-					light: '#F0F9FF',
-					dark: '#0F172A',
+					primary: 'hsl(var(--primary))',
+					secondary: 'hsl(var(--secondary))',
+					accent: 'hsl(var(--accent))',
+					light: 'hsl(var(--background))',
+					dark: 'hsl(var(--foreground))',
 				},
 			},
 			borderRadius: {
@@ -79,20 +78,12 @@ export default {
 			},
 			keyframes: {
 				'accordion-down': {
-					from: {
-						height: '0'
-					},
-					to: {
-						height: 'var(--radix-accordion-content-height)'
-					}
+					from: { height: '0' },
+					to: { height: 'var(--radix-accordion-content-height)' }
 				},
 				'accordion-up': {
-					from: {
-						height: 'var(--radix-accordion-content-height)'
-					},
-					to: {
-						height: '0'
-					}
+					from: { height: 'var(--radix-accordion-content-height)' },
+					to: { height: '0' }
 				}
 			},
 			animation: {
